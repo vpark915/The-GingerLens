@@ -12,9 +12,7 @@ func _ready():
 		arrays.append(PoolVector3Array())
 
 	# Create vertices from depth data
-	for i in range(0, depth_data.size(), 3):
-		var vertex = Vector3(depth_data[i], depth_data[i + 1], depth_data[i + 2])
-		arrays[0].append(vertex)
+	arrays[0] = _readCloudMMP()
 
 	# Generate triangles (assuming your depth data forms a grid)
 	var indices = PoolIntArray()
@@ -33,3 +31,19 @@ func _ready():
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
 	$MeshInstance.mesh = mesh
+
+func _readCloudMMP():
+	var array = []
+	var file = File.new()
+	if file.open("PythonFiles/cloud_mmp.txt", File.READ) == OK:
+		var content = file.get_as_text()
+		file.close()
+		var values = content.split(",",false)
+		for i in range(0, values.size(), 3):
+			var x = float(values[i])
+			var y = float(values[i + 1])
+			var z = float(values[i + 2])
+			array.append(Vector3(x, y, z))
+	else:
+		print("Failed to open the file.")
+	return array 

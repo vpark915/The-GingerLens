@@ -44,6 +44,7 @@ func _on_exit_request():
 	if file.open("PythonFiles/terminate.txt", File.WRITE) == OK:
 		file.store_string("terminate")
 		file.close()
+	thread.free()
 		
 func _notification(what):
 	if what == MainLoop.NOTIFICATION_WM_QUIT_REQUEST:
