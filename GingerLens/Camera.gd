@@ -1,4 +1,4 @@
-extends Camera
+extends Camera3D
 
 
 # Declare member variables here. Examples:
@@ -14,4 +14,4 @@ func _ready():
 func _process(delta):
 	if controller_node and controller_node.sensorData != null:
 		var sensor_data = controller_node.sensorData
-		rotation = Vector3(deg2rad(-1*sensor_data[1]),deg2rad(-1*sensor_data[0]),deg2rad(-1*sensor_data[2]))
+		rotation = Vector3(deg_to_rad(-1*sensor_data[1]),deg_to_rad(-1*sensor_data[0]),deg_to_rad(-1*sensor_data[2]))
