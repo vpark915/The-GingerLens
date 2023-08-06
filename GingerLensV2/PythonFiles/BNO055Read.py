@@ -6,6 +6,10 @@ import json
 os.environ["BLINKA_MCP2221"] = "1"
 device = hid.device()
 device.open(0x04D8, 0x00DD)
+pid = os.getpid()
+
+with open("PythonFiles/pid.txt", "w") as f:
+    f.write(str(pid))
 
 # SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
 # SPDX-License-Identifier: MIT
@@ -58,19 +62,21 @@ def main():
     while True:
         eulerX, eulerY, eulerZ = sensor.euler
         UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
-        print(eulerX)
+        if os.path.exists("PythonFiles/terminate.txt"):
+            os.remove("PythonFiles/terminate.txt")
+            break
         # FUNCTIONS PREDEFINED
         # print("Temperature: {} degrees C".format(sensor.temperature))
         # print("Accelerometer (m/s^2): {}".format(sensor.acceleration))
         # print("Magnetometer (microteslas): {}".format(sensor.magnetic))
         # print("Gyroscope (rad/sec): {}".format(sensor.gyro))
-        #print("Euler angle: {}".format(sensor.euler))
+        # print("Euler angle: {}".format(sensor.euler))
         # print(eulerX)
         # print("Quaternion: {}".format(sensor.quaternion))
         # print("Linear acceleration (m/s^2): {}".format(sensor.linear_acceleration))
         # print("Gravity (m/s^2): {}".format(sensor.gravity))
         # print()
-
+    sock.close()
 
 if __name__ == "__main__":
     main()

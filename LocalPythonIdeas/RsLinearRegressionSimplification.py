@@ -20,7 +20,7 @@ def retrieve_base_frame():
     depth_frame = frames.get_depth_frame()
     # Convert depth frame to a numpy array
     depth_image = np.asanyarray(depth_frame.get_data())
-    depth_image = cv2.flip(depth_image,0)
+    depth_image = cv2.flip(depth_image,-1)
     depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
     # CREATE THE NEW VECTOR3 LIST
     pointCloudVector3 = []
@@ -97,7 +97,17 @@ def filter_out_null(blocks):
                 filtered_block.append(point)
         filtered_array.append(filtered_block)
     return filtered_array
-
+'''
+def filter_out_null(blocks):
+    filtered_array = []
+    for i in range(0,80):
+        filtered_block = []
+        for point in blocks[i]:
+            if point[2] != 0:
+                filtered_block.append(point)
+        filtered_array.append(filtered_block)
+    return filtered_array
+'''
 def chunk(pcd):
     chunk_list = []
     for chunkrow in range(0, 10):
@@ -112,7 +122,22 @@ def chunk(pcd):
                                     (column)])
             chunk_list.append(chunk)
     return chunk_list
-
+'''
+def chunk(pcd):
+    chunk_list = []
+    for chunkrow in range(0, 8):
+        for chunkcol in range(0,10):
+            chunk = []
+            for row in range(0, 90):
+                for column in range(0,128):
+                    chunk.append(pcd[
+                                    (chunkrow*115200)+
+                                    (row*1280)+
+                                    (chunkcol*128)+
+                                    (column)])
+            chunk_list.append(chunk)
+    return chunk_list
+'''
 def generate_triangles():
     triangles = []
     for row in range(0, 9):
@@ -147,8 +172,8 @@ def main():
     #print(len(filtered_array))
     simplifiedPCD = []
     for region in range(0,200):
-        #print(filtered_array[region])
-        simplifiedPCD.append(fit_plane_center(filtered_array[region]))
+        if (filtered_array[region] != []):
+            simplifiedPCD.append(fit_plane_center(filtered_array[region]))
     write_to_memory_mapped_file(simplifiedPCD,triangles_list,cloud_file_path,triangle_file_path)
 main()
 
