@@ -1,13 +1,28 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://3DNode.gd" type="Script" id=1]
 [ext_resource path="res://RsMesh.gd" type="Script" id=2]
 
+[sub_resource type="BoxShape" id=1]
+
+[sub_resource type="CubeMesh" id=2]
+
 [node name="Spatial" type="Spatial"]
 script = ExtResource( 1 )
 
-[node name="Camera" type="Camera" parent="."]
-transform = Transform( -0.326342, 0.388246, -0.861839, 0.0896337, 0.920358, 0.380667, 0.940993, 0.0469776, -0.335151, 0, 0, 0 )
+[node name="RigidBody" type="RigidBody" parent="."]
+gravity_scale = 0.0
+can_sleep = false
+
+[node name="Camera" type="Camera" parent="RigidBody"]
+transform = Transform( -0.824118, -0.008313, -0.566358, -0.00109074, 0.999914, -0.0130896, 0.566418, -0.0101696, -0.824057, 0, 0, 0 )
+
+[node name="CollisionShape" type="CollisionShape" parent="RigidBody"]
+shape = SubResource( 1 )
 
 [node name="Spatial" type="Spatial" parent="."]
 script = ExtResource( 2 )
+
+[node name="DebugSquare" type="MeshInstance" parent="."]
+transform = Transform( 0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 4.08689 )
+mesh = SubResource( 2 )

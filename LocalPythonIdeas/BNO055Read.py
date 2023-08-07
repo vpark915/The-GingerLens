@@ -58,16 +58,16 @@ def main():
     while True:
         eulerX, eulerY, eulerZ = sensor.euler
         UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
-        print(eulerX)
+        #print(eulerX)
         # FUNCTIONS PREDEFINED
         # print("Temperature: {} degrees C".format(sensor.temperature))
-        # print("Accelerometer (m/s^2): {}".format(sensor.acceleration))
+        #print("Accelerometer (m/s^2): {}".format(sensor.acceleration))
         # print("Magnetometer (microteslas): {}".format(sensor.magnetic))
         # print("Gyroscope (rad/sec): {}".format(sensor.gyro))
-        #print("Euler angle: {}".format(sensor.euler))
+        print("Euler angle: {}".format(sensor.euler))
         # print(eulerX)
         # print("Quaternion: {}".format(sensor.quaternion))
-        # print("Linear acceleration (m/s^2): {}".format(sensor.linear_acceleration))
+        #print("Linear acceleration (m/s^2): {}".format(sensor.linear_acceleration))
         # print("Gravity (m/s^2): {}".format(sensor.gravity))
         # print()
 

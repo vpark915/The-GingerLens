@@ -60,8 +60,9 @@ def temperature():
 
 def main():
     while True:
-        eulerX, eulerY, eulerZ = sensor.euler
-        UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
+        qX, qY, qZ = sensor.euler
+        #accelX, accelY, accelZ = sensor.linear_acceleration
+        UDPSend([qX*-1, qY*-1, qZ*-1])
         if os.path.exists("PythonFiles/terminate.txt"):
             os.remove("PythonFiles/terminate.txt")
             break

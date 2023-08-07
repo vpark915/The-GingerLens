@@ -28,7 +28,10 @@ func _process(delta):
 		var data_array = parse_json(data)
 		#print(data_array)
 		var camera_angle = Vector3(data_array[1],data_array[0],data_array[2])
-		get_node("Camera").rotation_degrees = camera_angle
+		#var camera_mov = Vector3(data_array[3],data_array[4],data_array[5]
+		print(camera_angle)
+		#print(get_node("RigidBody").translation)
+		get_node("RigidBody/Camera").rotation_degrees = camera_angle
 
 
 func _run_python_script():
