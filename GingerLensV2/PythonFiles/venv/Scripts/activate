@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\parkv\Documents\GingerLens\PythonFiles\venv"
+VIRTUAL_ENV="C:\Users\parkv\Documents\GitHub\The-Goat-Visor-V2\GingerLensV2\PythonFiles\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

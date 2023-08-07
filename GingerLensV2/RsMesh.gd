@@ -1,32 +1,24 @@
 tool
 extends Spatial
 
+var thread = Thread.new()
 var depth_data  # Your [x,y,z,x,y,z,...] data
 var grid_width = 20    # Width of your depth grid (number of points, not actual width in space)
 var grid_height = 10   # Height of your depth grid
-var vertices = []
-var indices = []
+var vertices
+var indices
+var scandata
+
+var interpreter_path = "PythonFiles/venv/Scripts/python.exe"
+var script_path = "PythonFiles/RsLinearRegressionSimplification.py"
 
 func _ready():
-	vertices = _readCloudMMP()
-	print(vertices)
-	indices = _readTriangleMMP()
-	create_mesh_from_vertices(vertices,indices)
-
-#func generate_terrain():
-#	#MESH DETAILS 
-#	var a_mesh:ArrayMesh
-#	var surftool = SurfaceTool.new()
-#	surftool.begin(Mesh.PRIMITIVE_TRIANGLES)
-#	for depth in range(200):
-#		surftool.add_vertex(Vector3(x,y,z))
-#	surftool.add_index(0)
-#	surftool.add_index(1)
-#	surftool.add_index(xSize+1)
-#
-#	#COMMIT MESH 
-#	a_mesh = surftool.commit()
-#	mesh = a_mesh
+	#scandata = _getRsScan()
+	#vertices = scandata[1]
+	#print(vertices)
+	#indices = scandata[0]
+	#create_mesh_from_vertices(vertices,indices)
+	OS.execute(interpreter_path, [script_path], true)
 
 func draw_sphere(pos:Vector3):
 	var ins = MeshInstance.new()
@@ -53,7 +45,9 @@ func create_mesh_from_vertices(verts: PoolVector3Array, inds: PoolIntArray):
 func _readTriangleMMP():
 	var triangleArray = PoolIntArray()
 	var file = File.new()
-	file.open("PythonFiles/triangle_mmp.txt", File.READ)
+	while !file.file_exists("PythonFiles/temp/triangle_mmp.txt"):
+		yield(get_tree().create_timer(0.01),"timeout")
+	file.open("PythonFiles/temp/triangle_mmp.txt", File.READ)
 	var content = file.get_as_text()
 	file.close()
 	var values = content.split(",",false)
@@ -65,7 +59,9 @@ func _readTriangleMMP():
 func _readCloudMMP():
 	var array = PoolVector3Array()
 	var file = File.new()
-	file.open("PythonFiles/cloud_mmp.txt", File.READ)
+	while !file.file_exists("PythonFiles/temp/cloud_mmp.txt"):
+		yield(get_tree().create_timer(0.01),"timeout")
+	file.open("PythonFiles/temp/cloud_mmp.txt", File.READ)
 	var content = file.get_as_text()
 	file.close()
 	var values = content.split(",",false)
@@ -75,3 +71,20 @@ func _readCloudMMP():
 		var z = float(values[i + 2])/100
 		array.append(Vector3(x, y, z))
 	return array 
+	
+func _getRsScan():
+	OS.execute(interpreter_path, [script_path], true)
+	var triangle_array = _readTriangleMMP()
+	var cloud_array = _readCloudMMP()
+	return [triangle_array,cloud_array]
+	
+func _on_exit_request():
+	var file = File.new()
+	if file.open("PythonFiles/terminate.txt", File.WRITE) == OK:
+		file.store_line("t")
+		file.close()
+	if thread.is_active():
+		thread.wait_to_finish()
+
+func _basicRsFunc():
+	OS.execute(interpreter_path, [script_path, ">", "PythonFiles/output.log", "2>&1"], true)

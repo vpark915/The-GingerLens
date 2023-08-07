@@ -1,4 +1,4 @@
-#!C:\Users\parkv\Documents\GingerLens\PythonFiles\venv\Scripts\python.exe
+#!C:\Users\parkv\Documents\GitHub\The-Goat-Visor-V2\GingerLensV2\PythonFiles\venv\Scripts\python.exe
 
 """Simple Python serial terminal
 """
