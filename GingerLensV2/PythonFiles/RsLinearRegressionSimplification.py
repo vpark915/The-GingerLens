@@ -77,16 +77,20 @@ def fit_plane(points):
     return [[x_min, y_min, z1], [x_min, y_max, z2], [x_max, y_min, z3], [x_max, y_max, z4]]
 
 def write_to_memory_mapped_file(filtered_cloud, triangles_list, cloud_file_path, triangle_file_path):
-    oneDimensionFiltered = [item for sublist in filtered_cloud for item in sublist]
-    with open(cloud_file_path, 'w') as file:
-        # Write filtered_list to the file
-        line = ",".join(str(index) for index in oneDimensionFiltered)
-        file.write(line)
+    try:
+        oneDimensionFiltered = [item for sublist in filtered_cloud for item in sublist]
+        with open(cloud_file_path, 'w') as file:
+            # Write filtered_list to the file
+            line = ",".join(str(index) for index in oneDimensionFiltered)
+            file.write(line)
 
-    with open(triangle_file_path, 'w') as file:
-        # Write triangles_list to the file
-        line = ",".join(str(index) for index in triangles_list)
-        file.write(line)
+        with open(triangle_file_path, 'w') as file:
+            # Write triangles_list to the file
+            line = ",".join(str(index) for index in triangles_list)
+            file.write(line)
+    except Exception as e:
+        with open("error_log.txt", "w") as error_file:
+            error_file.write(str(e))
 
 def filter_out_null(blocks):
     filtered_array = []
@@ -97,17 +101,7 @@ def filter_out_null(blocks):
                 filtered_block.append(point)
         filtered_array.append(filtered_block)
     return filtered_array
-'''
-def filter_out_null(blocks):
-    filtered_array = []
-    for i in range(0,80):
-        filtered_block = []
-        for point in blocks[i]:
-            if point[2] != 0:
-                filtered_block.append(point)
-        filtered_array.append(filtered_block)
-    return filtered_array
-'''
+
 def chunk(pcd):
     chunk_list = []
     for chunkrow in range(0, 10):
@@ -122,22 +116,7 @@ def chunk(pcd):
                                     (column)])
             chunk_list.append(chunk)
     return chunk_list
-'''
-def chunk(pcd):
-    chunk_list = []
-    for chunkrow in range(0, 8):
-        for chunkcol in range(0,10):
-            chunk = []
-            for row in range(0, 90):
-                for column in range(0,128):
-                    chunk.append(pcd[
-                                    (chunkrow*115200)+
-                                    (row*1280)+
-                                    (chunkcol*128)+
-                                    (column)])
-            chunk_list.append(chunk)
-    return chunk_list
-'''
+
 def generate_triangles():
     triangles = []
     for row in range(0, 9):
@@ -165,8 +144,8 @@ def main():
     filtered_array = filter_out_null(reshaped_array)
     #print(len(filtered_array))
     #print(len(filtered_array[0][0]))
-    cloud_file_path = "temp/cloud_mmp.txt"
-    triangle_file_path = "temp/triangle_mmp.txt"
+    cloud_file_path = "PythonFiles/temp/cloud_mmp.txt"
+    triangle_file_path = "PythonFiles/temp/triangle_mmp.txt"
     triangles_list = generate_triangles()
     #print(filtered_array)
     #print(len(filtered_array))
@@ -175,7 +154,9 @@ def main():
         if (filtered_array[region] != []):
             simplifiedPCD.append(fit_plane_center(filtered_array[region]))
     write_to_memory_mapped_file(simplifiedPCD,triangles_list,cloud_file_path,triangle_file_path)
-main()
+
+if __name__ == "__main__":
+    main()
 
 
 

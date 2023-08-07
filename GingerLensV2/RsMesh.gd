@@ -1,7 +1,7 @@
-tool
+#tool
 extends Spatial
 
-var thread = Thread.new()
+var pythread = Thread.new()
 var depth_data  # Your [x,y,z,x,y,z,...] data
 var grid_width = 20    # Width of your depth grid (number of points, not actual width in space)
 var grid_height = 10   # Height of your depth grid
@@ -13,12 +13,8 @@ var interpreter_path = "PythonFiles/venv/Scripts/python.exe"
 var script_path = "PythonFiles/RsLinearRegressionSimplification.py"
 
 func _ready():
-	#scandata = _getRsScan()
-	#vertices = scandata[1]
-	#print(vertices)
-	#indices = scandata[0]
-	#create_mesh_from_vertices(vertices,indices)
-	OS.execute(interpreter_path, [script_path], true)
+	pythread.start(self,"_getRsScan")
+	#_basicRsFunc()
 
 func draw_sphere(pos:Vector3):
 	var ins = MeshInstance.new()
@@ -35,10 +31,10 @@ func create_mesh_from_vertices(verts: PoolVector3Array, inds: PoolIntArray):
 	surftool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for depth in verts:
 		draw_sphere(depth)
-		surftool.add_vertex(depth)
-	for index in inds: 
-		surftool.add_index(index)
-	a_mesh = surftool.commit()
+		#surftool.add_vertex(depth)
+	#for index in inds: 
+		#surftool.add_index(index)
+	#a_mesh = surftool.commit()
 	#get_node("MeshInstance3D").mesh = a_mesh
 
 
@@ -76,15 +72,16 @@ func _getRsScan():
 	OS.execute(interpreter_path, [script_path], true)
 	var triangle_array = _readTriangleMMP()
 	var cloud_array = _readCloudMMP()
-	return [triangle_array,cloud_array]
+	create_mesh_from_vertices(cloud_array,triangle_array)
+	return
 	
 func _on_exit_request():
 	var file = File.new()
 	if file.open("PythonFiles/terminate.txt", File.WRITE) == OK:
 		file.store_line("t")
 		file.close()
-	if thread.is_active():
-		thread.wait_to_finish()
+	if pythread.is_active():
+		pythread.wait_to_finish()
 
 func _basicRsFunc():
-	OS.execute(interpreter_path, [script_path, ">", "PythonFiles/output.log", "2>&1"], true)
+	print(OS.execute(interpreter_path, [script_path], true))

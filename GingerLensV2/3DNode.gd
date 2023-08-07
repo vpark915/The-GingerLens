@@ -1,3 +1,4 @@
+#tool
 extends Spatial
 
 var thread = Thread.new()
@@ -25,7 +26,7 @@ func _process(delta):
 		var packet = udp_server.get_packet()
 		var data = packet.get_string_from_utf8()
 		var data_array = parse_json(data)
-		print(data_array)
+		#print(data_array)
 		var camera_angle = Vector3(data_array[1],data_array[0],data_array[2])
 		get_node("Camera").rotation_degrees = camera_angle
 
