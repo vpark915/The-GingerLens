@@ -2,9 +2,6 @@
 extends Spatial
 
 var pythread = Thread.new()
-var depth_data  # Your [x,y,z,x,y,z,...] data
-var grid_width = 20    # Width of your depth grid (number of points, not actual width in space)
-var grid_height = 10   # Height of your depth grid
 var vertices
 var indices
 var scandata
@@ -12,8 +9,8 @@ var scandata
 var interpreter_path = "PythonFiles/venv/Scripts/python.exe"
 var script_path = "PythonFiles/RsLinearRegressionSimplification.py"
 
-func _ready():
-	pythread.start(self,"_getRsScan")
+#func _ready():
+	#pythread.start(self,"_getRsScan")
 	#_basicRsFunc()
 
 func draw_sphere(pos:Vector3):
@@ -73,13 +70,13 @@ func _readCloudMMP():
 	return array 
 	
 func _getRsScan():
-	var relative = get_node("../RigidBody/Camera").rotation_degrees
-	print(relative)
+	#var relative = get_node("../RigidBody/Camera").rotation_degrees
+	#print(relative)
 	OS.execute(interpreter_path, [script_path], true)
 	var triangle_array = _readTriangleMMP()
 	var cloud_array = _readCloudMMP()
 	create_mesh_from_vertices(cloud_array,triangle_array)
-	self.rotation_degrees = Vector3(-1*relative.x,0,-1*relative.z)
+	#self.rotation_degrees = Vector3(-1*relative.x,0,-1*relative.z)
 	return
 	
 func _on_exit_request():
@@ -90,5 +87,3 @@ func _on_exit_request():
 	if pythread.is_active():
 		pythread.wait_to_finish()
 
-func _basicRsFunc():
-	print(OS.execute(interpreter_path, [script_path], true))

@@ -50,3 +50,5 @@ func _on_exit_request():
 func _notification(what):
 	if what == MainLoop.NOTIFICATION_WM_QUIT_REQUEST:
 		_on_exit_request()
+		
+
