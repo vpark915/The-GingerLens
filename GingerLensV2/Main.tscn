@@ -11,20 +11,17 @@
 script = ExtResource( 1 )
 
 [node name="RigidBody" type="RigidBody" parent="."]
+transform = Transform( 0.120139, 0.540533, 0.832701, 0.948006, -0.311459, 0.0654031, 0.294705, 0.781548, -0.549847, 0, 0, 0 )
 gravity_scale = 0.0
 can_sleep = false
-axis_lock_angular_x = true
-axis_lock_angular_y = true
-axis_lock_angular_z = true
 
 [node name="Camera" type="Camera" parent="RigidBody"]
-transform = Transform( 0.0371721, 0.618044, -0.785266, 0.937622, -0.293384, -0.186524, -0.345664, -0.729347, -0.590398, 0, 0, 0 )
+transform = Transform( 1, 0, 0, 0, 0.999999, 0, 0, 0, 1, 0, 0, 0 )
 
 [node name="CollisionShape" type="CollisionShape" parent="RigidBody"]
 shape = SubResource( 1 )
 
 [node name="Spatial" type="Spatial" parent="."]
-transform = Transform( 0.999391, -0.0348995, 0, 0.0324989, 0.930647, 0.36447, -0.0127198, -0.364248, 0.931215, 0, 0, 0 )
 script = ExtResource( 2 )
 
 [node name="DebugSquare" type="MeshInstance" parent="."]

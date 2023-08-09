@@ -15,21 +15,27 @@ func _ready():
 #	pass
 
 func _create_render_instance():
+	#Wait until a camera angle instance is executing 
+	while !get_node("..").IMUFunc:
+		yield(get_tree().create_timer(0.01),"timeout")
+	
 	#Create a new thread 
 	var pythread = Thread.new()
 	
 	#Retrieve the right local positions 
 	var script = load("RsRender.gd")
 	var tempLoc = get_node("../RigidBody").translation
-	var tempAng = get_node("../RigidBody/Camera").rotation_degrees 
+	var tempAng = get_node("../RigidBody").rotation_degrees 
 	
 	#Create the new node 
 	var render_node = Spatial.new()
-	render_node.translation = tempLoc
-	render_node.rotation_degrees = Vector3(-1*tempAng.x,0,-1*tempAng.z)
+	render_node.visible = true 
 	render_node.set_script(script)
 	self.add_child(render_node)
 	
 	#Run the display function 
 	pythread.start(render_node,"_getRsScan")
+	render_node.translation = tempLoc
+	#print(tempAng)
+	render_node.rotation_degrees = Vector3(tempAng.x*-1,tempAng.y*-1,tempAng.z*-1)
 	

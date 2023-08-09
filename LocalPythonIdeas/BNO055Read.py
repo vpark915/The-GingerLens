@@ -42,7 +42,6 @@ def UDPSend(data):
 
     sock.close()
 
-
 def temperature():
     global last_val  # pylint: disable=global-statement
     result = sensor.temperature
@@ -55,16 +54,25 @@ def temperature():
 
 
 def main():
+    last_time = time.time()
     while True:
-        eulerX, eulerY, eulerZ = sensor.euler
-        UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
+        current_time = time.time()
+        deltaTime = current_time - last_time
+        AcX,AcY,AcZ = sensor.linear_acceleration
+        AcX *= 100000
+        AcY *= 100000
+        AcZ *= 100000
+        print(f"x:{AcX*deltaTime*deltaTime} y:{AcY*deltaTime*deltaTime} z:{AcZ*deltaTime*deltaTime}")
+        last_time = current_time
+        #eulerX, eulerY, eulerZ = sensor.euler
+        #UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
         #print(eulerX)
         # FUNCTIONS PREDEFINED
         # print("Temperature: {} degrees C".format(sensor.temperature))
         #print("Accelerometer (m/s^2): {}".format(sensor.acceleration))
         # print("Magnetometer (microteslas): {}".format(sensor.magnetic))
         # print("Gyroscope (rad/sec): {}".format(sensor.gyro))
-        print("Euler angle: {}".format(sensor.euler))
+        #print("Euler angle: {}".format(sensor.euler))
         # print(eulerX)
         # print("Quaternion: {}".format(sensor.quaternion))
         #print("Linear acceleration (m/s^2): {}".format(sensor.linear_acceleration))

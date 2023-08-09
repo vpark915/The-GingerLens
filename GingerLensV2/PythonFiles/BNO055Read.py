@@ -61,8 +61,16 @@ def temperature():
 def main():
     while True:
         qX, qY, qZ = sensor.euler
-        #accelX, accelY, accelZ = sensor.linear_acceleration
-        UDPSend([qX*-1, qY*-1, qZ*-1])
+        accelX, accelY, accelZ = sensor.linear_acceleration
+
+        #Low Pass Filter
+        if abs(accelX) < 0.1:
+            accelX = 0
+        if abs(accelY) < 0.1:
+            accelY = 0
+        if abs(accelZ) < 0.15:
+            accelZ = 0
+        UDPSend([qX*-1, qY*-1, qZ*-1,accelX,accelY,accelZ])
         if os.path.exists("PythonFiles/terminate.txt"):
             os.remove("PythonFiles/terminate.txt")
             break
