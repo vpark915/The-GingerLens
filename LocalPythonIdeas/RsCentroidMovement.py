@@ -43,20 +43,20 @@ pipeline.start(config)
 lastCentroid = []
 currentCentroid = []
 
-while True:
-    # Wait for a new set of frames
-    frames = pipeline.wait_for_frames()
+#START LOOP HERE
+# Wait for a new set of frames
+frames = pipeline.wait_for_frames()
 
-    #Retrieve Depth Intrinsics
-    depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
+#Retrieve Depth Intrinsics
+depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
 
-    # Get the depth frame
-    depth_frame = frames.get_depth_frame()
-    depth_image = np.asanyarray(depth_frame.get_data())
-    depth_image = cv2.flip(depth_image, -1)
+# Get the depth frame
+depth_frame = frames.get_depth_frame()
+depth_image = np.asanyarray(depth_frame.get_data())
+depth_image = cv2.flip(depth_image, -1)
 
-    currentCentroid = RetrieveCentroid()
-    if lastCentroid 
+currentCentroid = RetrieveCentroid()
+print(distance([-18.25813196715417, -83.9366413712725, 4641.484391419917],[-29.784899111062852, -87.25096953448129, 4943.838039452602]))
 
 
 # Stop the pipeline
