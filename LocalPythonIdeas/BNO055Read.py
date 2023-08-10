@@ -54,16 +54,9 @@ def temperature():
 
 
 def main():
-    last_time = time.time()
     while True:
-        current_time = time.time()
-        deltaTime = current_time - last_time
         AcX,AcY,AcZ = sensor.linear_acceleration
-        AcX *= 100000
-        AcY *= 100000
-        AcZ *= 100000
-        print(f"x:{AcX*deltaTime*deltaTime} y:{AcY*deltaTime*deltaTime} z:{AcZ*deltaTime*deltaTime}")
-        last_time = current_time
+        print(f"x:{AcX} y:{AcY} z:{AcZ}")
         #eulerX, eulerY, eulerZ = sensor.euler
         #UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
         #print(eulerX)
