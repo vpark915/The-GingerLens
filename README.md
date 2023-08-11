@@ -1,4 +1,4 @@
-# The Ginger Headset
+# The Gingerlens
 Making the first AR headset with spatial awareness that won't break the bank. 
 Using the intel realsense d415 for spatial and rgb detection 
 BNO055 for detecting orientation 
