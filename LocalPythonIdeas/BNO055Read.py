@@ -51,27 +51,34 @@ def temperature():
             return 0b00111111 & result
     last_val = result
     return result
-
-
+last_time = time.time()
+start_timer = time.time()
 def main():
     while True:
-        AcX,AcY,AcZ = sensor.linear_acceleration
-        print(f"x:{AcX} y:{AcY} z:{AcZ}")
-        #eulerX, eulerY, eulerZ = sensor.euler
-        #UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
-        #print(eulerX)
-        # FUNCTIONS PREDEFINED
-        # print("Temperature: {} degrees C".format(sensor.temperature))
-        #print("Accelerometer (m/s^2): {}".format(sensor.acceleration))
-        # print("Magnetometer (microteslas): {}".format(sensor.magnetic))
-        # print("Gyroscope (rad/sec): {}".format(sensor.gyro))
-        #print("Euler angle: {}".format(sensor.euler))
-        # print(eulerX)
-        # print("Quaternion: {}".format(sensor.quaternion))
-        #print("Linear acceleration (m/s^2): {}".format(sensor.linear_acceleration))
-        # print("Gravity (m/s^2): {}".format(sensor.gravity))
-        # print()
-
+        timer = time.time() - start_timer
+        if timer > 2:
+            current_time = time.time()
+            AcX,AcY,AcZ = sensor.linear_acceleration
+            delta_time = current_time - last_time
+            print(f"x:{AcX} y:{AcY} z:{AcZ}")
+            #eulerX, eulerY, eulerZ = sensor.euler
+            #UDPSend([eulerX*-1, eulerY*-1, eulerZ*-1])
+            UDPSend([AcX*delta_time,AcY*delta_time,AcZ*delta_time])
+            #print(eulerX)
+            # FUNCTIONS PREDEFINED
+            # print("Temperature: {} degrees C".format(sensor.temperature))
+            #print("Accelerometer (m/s^2): {}".format(sensor.acceleration))
+            # print("Magnetometer (microteslas): {}".format(sensor.magnetic))
+            # print("Gyroscope (rad/sec): {}".format(sensor.gyro))
+            #print("Euler angle: {}".format(sensor.euler))
+            # print(eulerX)
+            # print("Quaternion: {}".format(sensor.quaternion))
+            #print("Linear acceleration (m/s^2): {}".format(sensor.linear_acceleration))
+            # print("Gravity (m/s^2): {}".format(sensor.gravity))
+            # print()
+            last_time = current_time
+        else:
+            last_time = time.time()
 
 if __name__ == "__main__":
     main()

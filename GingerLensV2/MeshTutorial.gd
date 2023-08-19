@@ -1,11 +1,6 @@
 #@tool
-extends MeshInstance3D
+extends MeshInstance
 
-@export var xSize = 20
-@export var zSize = 20
-
-@export var update = false 
-@export var clear_vert_vis = false
 func _ready():
 	print("hello")
 	generate_terrain()
