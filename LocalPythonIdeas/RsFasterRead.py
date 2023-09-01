@@ -4,15 +4,77 @@ import pyrealsense2 as rs
 import cv2
 import math
 
+"""
+Startup the correct pipelines outside of the function to increase streamlining
+"""
+
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+pipeline.start(config)
+
+def downscale_retrieve_and_chunk():
+    # Wait for the next frameset
+    frames = pipeline.wait_for_frames()
+
+    # Get depth frame
+    depth_frame = frames.get_depth_frame()
+
+    # Convert depth frame to a numpy array
+    depth_image = np.asanyarray(depth_frame.get_data())
+    depth_image = cv2.flip(depth_image, -1)
+    depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
+    chunked_list = []
+
+    # Create Chunk-Filter Loop
+    for irow in range(0,10):
+        for icol in range(0,20):
+            chunk = []
+            for irownum in range(0,72):
+                for icolnum in range(0,64):
+                    row = (irow * 72) + irownum
+                    col = (icol * 64) + icolnum
+                    depth = depth_image[row][col]
+                    pixel = [col, row]
+                    if (depth > 0 and depth < 10000):
+                        vector = rs.rs2_deproject_pixel_to_point(depth_intrinsics, pixel, depth)
+                        chunk.append(vector)
+            #print(chunk)
+            centered_vector = fit_plane_center(chunk)
+            chunked_list.append(centered_vector)
+    return chunked_list
+def retrieve_and_chunk():
+    # Wait for the next frameset
+    frames = pipeline.wait_for_frames()
+
+    # Get depth frame
+    depth_frame = frames.get_depth_frame()
+
+    # Convert depth frame to a numpy array
+    depth_image = np.asanyarray(depth_frame.get_data())
+    depth_image = cv2.flip(depth_image, -1)
+    depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
+    chunked_list = []
+
+    # Create Chunk-Filter Loop
+    for irow in range(0,20):
+        for icol in range(0,40):
+            chunk = []
+            for irownum in range(0,18):
+                for icolnum in range(0,16):
+                    row = (irow * 18) + irownum
+                    col = (icol * 16) + icolnum
+                    depth = depth_image[row][col]
+                    pixel = [col, row]
+                    if (depth > 0 and depth < 10000):
+                        vector = rs.rs2_deproject_pixel_to_point(depth_intrinsics, pixel, depth)
+                        chunk.append(vector)
+            #print(chunk)
+            centered_vector = fit_plane_center(chunk)
+            chunked_list.append(centered_vector)
+    return chunked_list
+
 def retrieve_base_frame():
-    # Create pipeline and configure it
-    pipeline = rs.pipeline()
-    config = rs.config()
-    config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
-
-    # Start pipeline
-    pipeline.start(config)
-
     # Wait for the next frameset
     frames = pipeline.wait_for_frames()
 
@@ -137,22 +199,10 @@ def generate_triangles():
     return triangles
 
 def main():
-    pcd = retrieve_base_frame()
-    reshaped_array = chunk(pcd)
-    #print(len(reshaped_array))
-    #FILTER OUT THE NULLS PUT EARLIER
-    filtered_array = filter_out_null(reshaped_array)
-    #print(len(filtered_array))
-    #print(len(filtered_array[0][0]))
-    cloud_file_path = "PythonFiles/temp/cloud_mmp.txt"
-    triangle_file_path = "PythonFiles/temp/triangle_mmp.txt"
+    simplifiedPCD = downscale_retrieve_and_chunk()
+    cloud_file_path = "cloud_mmp.txt"
+    triangle_file_path = "triangle_mmp.txt"
     triangles_list = generate_triangles()
-    #print(filtered_array)
-    #print(len(filtered_array))
-    simplifiedPCD = []
-    for region in range(0,200):
-        if (filtered_array[region] != []):
-            simplifiedPCD.append(fit_plane_center(filtered_array[region]))
     write_to_memory_mapped_file(simplifiedPCD,triangles_list,cloud_file_path,triangle_file_path)
 
 if __name__ == "__main__":

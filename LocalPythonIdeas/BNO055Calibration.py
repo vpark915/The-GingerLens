@@ -96,7 +96,7 @@ while t < total_time:
         print("Start Calibration")
         calibration += 1
         if calibration >= 2:
-            if accelerations[calibration-1]-accelerations[calibration-2] > 1.5 or accelerations[calibration-1]-accelerations[calibration-2] < -1.5:
+            if accelerations[calibration-1]-accelerations[calibration-2] > 1.5 or accelerations[calibration-1]-accelerations[calibration-2] < -1.5  :
                 # Create the variables
                 velocity += AcZ * deltaTime
                 position += velocity * deltaTime

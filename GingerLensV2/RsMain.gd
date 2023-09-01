@@ -16,8 +16,8 @@ func _ready():
 
 func _create_render_instance():
 	#Wait until a camera angle instance is executing 
-	while !get_node("..").IMUFunc:
-		yield(get_tree().create_timer(0.01),"timeout")
+	#while !get_node("..").IMUFunc:
+		#yield(get_tree().create_timer(0.01),"timeout")
 	
 	#Create a new thread 
 	var pythread = Thread.new()

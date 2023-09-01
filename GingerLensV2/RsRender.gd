@@ -7,7 +7,7 @@ var indices
 var scandata
 
 var interpreter_path = "PythonFiles/venv/Scripts/python.exe"
-var script_path = "PythonFiles/RsLinearRegressionSimplification.py"
+var script_path = "PythonFiles/RsFasterRead.py"
 
 #func _ready():
 	#pythread.start(self,"_getRsScan")

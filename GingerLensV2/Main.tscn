@@ -11,7 +11,6 @@
 script = ExtResource( 1 )
 
 [node name="RigidBody" type="RigidBody" parent="."]
-transform = Transform( 0.120139, 0.540533, 0.832701, 0.948006, -0.311459, 0.0654031, 0.294705, 0.781548, -0.549847, 0, 0, 0 )
 gravity_scale = 0.0
 can_sleep = false
 
