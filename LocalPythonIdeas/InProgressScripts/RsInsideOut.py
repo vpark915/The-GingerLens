@@ -8,11 +8,16 @@ import math
 Startup the correct pipelines outside of the function to increase streamlining
 """
 
+#REALSENSE INTIALIZATION
 pipeline = rs.pipeline()
 config = rs.config()
 config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 pipeline.start(config)
 
+#BNO055 VARIABLES
+xrot = 0
+yrot = 0
+zrot = 0
 
 def write_to_memory_mapped_file(filtered_cloud, triangles_list, cloud_file_path, triangle_file_path):
     try:
@@ -27,10 +32,36 @@ def write_to_memory_mapped_file(filtered_cloud, triangles_list, cloud_file_path,
             line = ",".join(str(index) for index in triangles_list)
             file.write(line)
     except Exception as e:
-        with open("error_log.txt", "w") as error_file:
+        with open("../error_log.txt", "w") as error_file:
             error_file.write(str(e))
+def rotate_point_cloud_3d(point_cloud, theta_x, theta_y, theta_z):
+    # Create the rotation matrices for each axis
+    R_x = np.array([
+        [1, 0, 0],
+        [0, np.cos(theta_x), -np.sin(theta_x)],
+        [0, np.sin(theta_x), np.cos(theta_x)]
+    ])
 
-class RoomScan():
+    R_y = np.array([
+        [np.cos(theta_y), 0, np.sin(theta_y)],
+        [0, 1, 0],
+        [-np.sin(theta_y), 0, np.cos(theta_y)]
+    ])
+
+    R_z = np.array([
+        [np.cos(theta_z), -np.sin(theta_z), 0],
+        [np.sin(theta_z), np.cos(theta_z), 0],
+        [0, 0, 1]
+    ])
+
+    # Compute the composite rotation matrix
+    R = np.dot(R_z, np.dot(R_y, R_x))
+
+    # Rotate the point cloud
+    rotated_point_cloud = np.dot(point_cloud, R.T)
+
+    return rotated_point_cloud
+class RoomScan:
     def __init__(self,config,pipeline):
         self.config = config
         self.pipeline = pipeline
@@ -203,11 +234,8 @@ class RoomScan():
                                  (col) + 20)
         return triangles
 
-class DotTracking():
-    def __init__(self,dotmatrix):
-        self.points = dotmatrix
-    def processX(self):
-        return 
+
+
 def main():
     #Class Stuff
     pointCloudGeneration = RoomScan(config,pipeline)
@@ -215,8 +243,8 @@ def main():
     triangles_list = pointCloudGeneration.generate_triangles()
 
     #File Stuff
-    cloud_file_path = "cloud_mmp.txt"
-    triangle_file_path = "triangle_mmp.txt"
+    cloud_file_path = "../cloud_mmp.txt"
+    triangle_file_path = "../triangle_mmp.txt"
     write_to_memory_mapped_file(simplifiedPCD,triangles_list,cloud_file_path,triangle_file_path)
 
 if __name__ == "__main__":

@@ -5,8 +5,8 @@ import pyrealsense2 as rs
 # Initialize RealSense pipeline
 pipeline = rs.pipeline()
 config = rs.config()
-config.enable_stream(rs.stream.depth, 640, 360, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 640, 360, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
 pipeline.start(config)
 
 # Initialize ORB detector
@@ -20,8 +20,7 @@ prev_gray = None
 prev_kps = None
 prev_descs = None
 
-# Filtering
-MAX_MATCH_DISTANCE = 20  # You can change this threshold based on your needs
+MAX_MATCH_DISTANCE = 40  # You can change this threshold based on your needs
 
 try:
     while True:
@@ -71,4 +70,3 @@ except KeyboardInterrupt:
 finally:
     pipeline.stop()
     cv2.destroyAllWindows()
-
