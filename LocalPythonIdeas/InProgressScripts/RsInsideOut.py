@@ -1,256 +1,121 @@
 import numpy as np
-from sklearn.linear_model import LinearRegression
-import pyrealsense2 as rs
 import cv2
+import pyrealsense2 as rs
 import math
 
-"""
-Startup the correct pipelines outside of the function to increase streamlining
-"""
-
-#REALSENSE INTIALIZATION
+# Initialize RealSense pipeline
 pipeline = rs.pipeline()
 config = rs.config()
-config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 30)
 pipeline.start(config)
 
-#BNO055 VARIABLES
-xrot = 0
-yrot = 0
-zrot = 0
+# Initialize ORB detector
+orb = cv2.ORB_create()
 
-def write_to_memory_mapped_file(filtered_cloud, triangles_list, cloud_file_path, triangle_file_path):
-    try:
-        oneDimensionFiltered = [item for sublist in filtered_cloud for item in sublist]
-        with open(cloud_file_path, 'w') as file:
-            # Write filtered_list to the file
-            line = ",".join(str(index) for index in oneDimensionFiltered)
-            file.write(line)
+# Brute-force Matcher
+bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
 
-        with open(triangle_file_path, 'w') as file:
-            # Write triangles_list to the file
-            line = ",".join(str(index) for index in triangles_list)
-            file.write(line)
-    except Exception as e:
-        with open("../error_log.txt", "w") as error_file:
-            error_file.write(str(e))
-def rotate_point_cloud_3d(point_cloud, theta_x, theta_y, theta_z):
-    # Create the rotation matrices for each axis
-    R_x = np.array([
-        [1, 0, 0],
-        [0, np.cos(theta_x), -np.sin(theta_x)],
-        [0, np.sin(theta_x), np.cos(theta_x)]
-    ])
+# Previous frame data
+prev_gray = None
+prev_kps = None
+prev_descs = None
+prev_matched_coords = None
+current_matched_coords = None
+MAX_MATCH_DISTANCE = 40  # You can change this threshold based on your needs
+TOP_PERCENTAGE = 0.1  # Top 10% best matches
 
-    R_y = np.array([
-        [np.cos(theta_y), 0, np.sin(theta_y)],
-        [0, 1, 0],
-        [-np.sin(theta_y), 0, np.cos(theta_y)]
-    ])
+# LIST OF DISTANCE VECTORS
+distance_vectors = None
 
-    R_z = np.array([
-        [np.cos(theta_z), -np.sin(theta_z), 0],
-        [np.sin(theta_z), np.cos(theta_z), 0],
-        [0, 0, 1]
-    ])
+def average_list(list):
+    return sum(list)/len(list)
+def distance_3d(point1, point2):
+    return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2 + (point2[2] - point1[2])**2)
 
-    # Compute the composite rotation matrix
-    R = np.dot(R_z, np.dot(R_y, R_x))
-
-    # Rotate the point cloud
-    rotated_point_cloud = np.dot(point_cloud, R.T)
-
-    return rotated_point_cloud
-class RoomScan:
-    def __init__(self,config,pipeline):
-        self.config = config
-        self.pipeline = pipeline
-
-    def fit_plane_center(points):
-        # Convert points to 2D numpy array
-        points = np.array(points, dtype=float)
-        # Perform linear regression to fit a plane
-        model = LinearRegression()
-        model.fit(points[:, :2], points[:, 2])
-
-        # Calculate the center of the bounding box
-        x_center = (points[:, 0].min() + points[:, 0].max()) / 2
-        y_center = (points[:, 1].min() + points[:, 1].max()) / 2
-        a, b = model.coef_
-        d = model.intercept_
-        z_center = a * x_center + b * y_center + d
-
-        return [x_center, y_center, z_center]
-    def downscale_retrieve_and_chunk(self):
-        # Wait for the next frameset
+try:
+    while True:
+        # Create alignment
+        align_to = rs.stream.color
+        align = rs.align(align_to)
+        # Get frameset of depth and color
         frames = pipeline.wait_for_frames()
-
-        # Get depth frame
-        depth_frame = frames.get_depth_frame()
-
-        # Convert depth frame to a numpy array
-        depth_image = np.asanyarray(depth_frame.get_data())
-        depth_image = cv2.flip(depth_image, -1)
+        aligned_frames = align.process(frames)
+        aligned_depth_frame = aligned_frames.get_depth_frame()
+        depth_image = np.asanyarray(aligned_depth_frame.get_data())
         depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
-        chunked_list = []
+        color_frame = frames.get_color_frame()
 
-        # Create Chunk-Filter Loop
-        for irow in range(0,10):
-            for icol in range(0,20):
-                chunk = []
-                for irownum in range(0,72):
-                    for icolnum in range(0,64):
-                        row = (irow * 72) + irownum
-                        col = (icol * 64) + icolnum
-                        depth = depth_image[row][col]
-                        pixel = [col, row]
-                        if (depth > 0 and depth < 10000):
-                            vector = rs.rs2_deproject_pixel_to_point(depth_intrinsics, pixel, depth)
-                            chunk.append(vector)
-                #print(chunk)
-                centered_vector = self.fit_plane_center(chunk)
-                chunked_list.append(centered_vector)
-        return chunked_list
-    def retrieve_and_chunk(self):
-        # Wait for the next frameset
-        frames = pipeline.wait_for_frames()
+        # Convert color frame to numpy array
+        color_image = np.asanyarray(color_frame.get_data())
 
-        # Get depth frame
-        depth_frame = frames.get_depth_frame()
+        # Convert to grayscale for ORB
+        gray = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
 
-        # Convert depth frame to a numpy array
-        depth_image = np.asanyarray(depth_frame.get_data())
-        depth_image = cv2.flip(depth_image, -1)
-        depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
-        chunked_list = []
+        # Detect ORB keypoints and descriptors
+        kps, descs = orb.detectAndCompute(gray, None)
 
-        # Create Chunk-Filter Loop
-        for irow in range(0,20):
-            for icol in range(0,40):
-                chunk = []
-                for irownum in range(0,18):
-                    for icolnum in range(0,16):
-                        row = (irow * 18) + irownum
-                        col = (icol * 16) + icolnum
-                        depth = depth_image[row][col]
-                        pixel = [col, row]
-                        if (depth > 0 and depth < 10000):
-                            vector = rs.rs2_deproject_pixel_to_point(depth_intrinsics, pixel, depth)
-                            chunk.append(vector)
-                #print(chunk)
-                centered_vector = self.fit_plane_center(chunk)
-                chunked_list.append(centered_vector)
-        return chunked_list
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+        depth_with_kps = cv2.drawKeypoints(depth_colormap, kps, None, color=(0, 255, 0), flags=0)
+        cv2.imshow('Depth with Keypoints', depth_with_kps)
 
-    def retrieve_base_frame(self):
-        # Wait for the next frameset
-        frames = pipeline.wait_for_frames()
+        # Match with previous frame's keypoints and descriptors, if available
+        if prev_gray is not None:
+            matches = bf.match(prev_descs, descs)
 
-        # Get depth frame
-        depth_frame = frames.get_depth_frame()
-        # Convert depth frame to a numpy array
-        depth_image = np.asanyarray(depth_frame.get_data())
-        depth_image = cv2.flip(depth_image,-1)
-        depth_intrinsics = frames.profile.as_video_stream_profile().intrinsics
-        # CREATE THE NEW VECTOR3 LIST
-        pointCloudVector3 = []
-        for row in range(0, 720):
-            for item in range(0, 1280):
-                depth = depth_image[row][item]
-                if(depth > 0 and depth < 10000):
-                    pixel = [item, row]
-                    vector = rs.rs2_deproject_pixel_to_point(depth_intrinsics,pixel,depth)
-                    #print(vector)
-                    pointCloudVector3.append(vector)
-                else:
-                    vector = [0,0,0]
-                    pointCloudVector3.append(vector)
-        return pointCloudVector3
+            if len(matches) > 0:
+                # Sort the matches based on distance (lowest distance is better)
+                matches = sorted(matches, key=lambda x: x.distance)
 
-    def fit_plane(points):
-        points = np.array(points)
-        # Separate coordinates
-        xs = points[:, 0]
-        ys = points[:, 1]
-        zs = points[:, 2]
+                # Filter matches based on a distance threshold
+                good_matches = [m for m in matches if m.distance < MAX_MATCH_DISTANCE]
 
-        # Perform linear regression to fit a plane
-        model = LinearRegression()
-        model.fit(np.column_stack((xs, ys)), zs)
+                """PERCENTAGE BASED FILTERING"""
+                # 1. Percentage-based Filtering
+                num_good_matches = int(len(matches) * TOP_PERCENTAGE)
+                good_matches_percentage = matches[:num_good_matches]
 
-        # Calculate the z-coordinates of the corners of the bounding box
-        x_min, x_max = xs.min(), xs.max()
-        y_min, y_max = ys.min(), ys.max()
-        a, b = model.coef_
-        d = model.intercept_
-        z1 = a * x_min + b * y_min + d
-        z2 = a * x_min + b * y_max + d
-        z3 = a * x_max + b * y_min + d
-        z4 = a * x_max + b * y_max + d
+                # Extract (x, y) coordinates of matched keypoints
+                prev_matched_coords = [prev_kps[match.queryIdx].pt for match in good_matches_percentage]
+                current_matched_coords = [kps[match.trainIdx].pt for match in good_matches_percentage]
 
-        return [[x_min, y_min, z1], [x_min, y_max, z2], [x_max, y_min, z3], [x_max, y_max, z4]]
+                # Print matched coordinates (You can store or process them further based on your needs)
+                print("Previous Frame Matched Coordinates:", prev_matched_coords)
+                print("Current Frame Matched Coordinates:", current_matched_coords)
+                print("Depth of current:", depth_image[int(current_matched_coords[0][1])][int(current_matched_coords[0][0])])
 
-    def filter_out_null(blocks):
-        filtered_array = []
-        for i in range(0,200):
-            filtered_block = []
-            for point in blocks[i]:
-                if point[2] != 0:
-                    filtered_block.append(point)
-            filtered_array.append(filtered_block)
-        return filtered_array
+                if len(good_matches) > 0:
+                    matched_image = cv2.drawMatches(prev_gray, prev_kps, gray, kps, good_matches_percentage, None)  # or replace 'good_matches_percentage' with 'good_matches_ratio'
+                    cv2.imshow('Filtered Matched keypoints', matched_image)
 
-    def chunk(pcd):
-        chunk_list = []
-        for chunkrow in range(0, 10):
-            for chunkcol in range(0,20):
-                chunk = []
-                for row in range(0, 72):
-                    for column in range(0,64):
-                        chunk.append(pcd[
-                                        (chunkrow*92160)+
-                                        (row*1280)+
-                                        (chunkcol*64)+
-                                        (column)])
-                chunk_list.append(chunk)
-        return chunk_list
+                #Grab the accurate real world coordinates of the keypoints
+                distance_vectors = []
+                for index in range(len(prev_matched_coords)):
+                    #If the depth of the keypoint doesn't register don't think about it
+                    if depth_image[int(current_matched_coords[index][1])][int(current_matched_coords[index][0])] != 0 and depth_image[int(current_matched_coords[index][1])][int(current_matched_coords[index][0])] < 1000:
+                        point1 = rs.rs2_deproject_pixel_to_point(depth_intrinsics,
+                                                                 [int(prev_matched_coords[index][1]),
+                                                                  int(prev_matched_coords[index][0])],
+                                                                 depth_image[int(prev_matched_coords[index][1])][int(prev_matched_coords[index][0])])
+                        point2 = rs.rs2_deproject_pixel_to_point(depth_intrinsics,
+                                                                 [int(current_matched_coords[index][1]),
+                                                                  int(current_matched_coords[index][0])],
+                                                                 depth_image[int(current_matched_coords[index][1])][int(current_matched_coords[index][0])])
+                        distance_vectors.append(distance_3d(point1,point2))
+                print("LIST LENGTH:",average_list(distance_vectors))
+            #else:
+        # Update the previous frame data
+        prev_gray = gray
+        prev_kps = kps
+        prev_descs = descs
 
-    def generate_triangles(self):
-        triangles = []
-        for row in range(0, 9):
-            for col in range(0, 19):
-                triangles.append((row * 20) +
-                                 (col))
-                triangles.append((row * 20) +
-                                 (col) + 10)
-                triangles.append((row * 20) +
-                                 (col) + 1)
-                # Second Triangle
-                triangles.append((row * 20) +
-                                 (col) + 1)
-                triangles.append((row * 20) +
-                                 (col) + 19)
-                triangles.append((row * 20) +
-                                 (col) + 20)
-        return triangles
+        # Exit on 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
+except KeyboardInterrupt:
+    pass
 
-
-def main():
-    #Class Stuff
-    pointCloudGeneration = RoomScan(config,pipeline)
-    simplifiedPCD = pointCloudGeneration.downscale_retrieve_and_chunk()
-    triangles_list = pointCloudGeneration.generate_triangles()
-
-    #File Stuff
-    cloud_file_path = "../cloud_mmp.txt"
-    triangle_file_path = "../triangle_mmp.txt"
-    write_to_memory_mapped_file(simplifiedPCD,triangles_list,cloud_file_path,triangle_file_path)
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-
+finally:
+    pipeline.stop()
+    cv2.destroyAllWindows()

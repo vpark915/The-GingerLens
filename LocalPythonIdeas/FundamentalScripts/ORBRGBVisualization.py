@@ -21,7 +21,7 @@ prev_kps = None
 prev_descs = None
 
 MAX_MATCH_DISTANCE = 40  # You can change this threshold based on your needs
-
+TOP_PERCENTAGE = 0.1  # Top 10% best matches
 try:
     while True:
         # Get frameset of depth and color
@@ -51,9 +51,18 @@ try:
                 # Filter matches based on a distance threshold
                 good_matches = [m for m in matches if m.distance < MAX_MATCH_DISTANCE]
 
+                """PERCENTAGE BASED FILTERING"""
+                # 1. Percentage-based Filtering
+                num_good_matches = int(len(matches) * TOP_PERCENTAGE)
+                good_matches_percentage = matches[:num_good_matches]
+
                 if len(good_matches) > 0:
+                    matched_image = cv2.drawMatches(prev_gray, prev_kps, gray, kps, good_matches_percentage, None)  # or replace 'good_matches_percentage' with 'good_matches_ratio'
+                    cv2.imshow('Filtered Matched keypoints', matched_image)
+                    """
                     matched_image = cv2.drawMatches(prev_gray, prev_kps, gray, kps, good_matches, None)
                     cv2.imshow('Filtered Matched keypoints', matched_image)
+                    """
 
         # Update the previous frame data
         prev_gray = gray
