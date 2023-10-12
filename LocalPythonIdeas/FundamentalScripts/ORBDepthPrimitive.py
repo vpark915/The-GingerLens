@@ -26,30 +26,12 @@ current_matched_coords = None
 MAX_MATCH_DISTANCE = 40  # You can change this threshold based on your needs
 TOP_PERCENTAGE = 0.1  # Top 10% best matches
 
-# Rotation Stuff
-current_euler = None
-previous_euler = None
-delta_euler = None
+# LIST OF DISTANCE VECTORS
+real_points = None
+distance_vectors = None
+euler_prediction = None
 
-#Vector movement
-current_vector = None
 
-def filter_outlier_vectors(vector_list):
-    # Convert to a NumPy array for easy computation
-    vectors_np = np.array(vector_list)
-
-    # Calculate the mean vector
-    mean_vector = vectors_np.mean(axis=0)
-
-    # Calculate the Euclidean distances of each vector from the mean vector
-    distances = np.linalg.norm(vectors_np - mean_vector, axis=1)
-
-    # Determine a threshold for outliers. Here, we use mean + 2*std as an example.
-    threshold = distances.mean() + 2 * distances.std()
-
-    # Filter out outliers
-    filtered_vectors = vectors_np[distances < threshold].tolist()
-    return filtered_vectors
 def rotation_matrix(theta_x, theta_y, theta_z):
     Rx = np.array([[1, 0, 0],
                    [0, np.cos(theta_x), -np.sin(theta_x)],
@@ -65,11 +47,17 @@ def rotation_matrix(theta_x, theta_y, theta_z):
 
     R = np.dot(Rz, np.dot(Ry, Rx))
     return R
-def rotated_point_coordinates(point, theta_x, theta_y, theta_z):
+
+
+def euler_displacement(theta_x, theta_y, theta_z, point):
     return np.dot(rotation_matrix(theta_x, theta_y, theta_z), point)
+
+
 def distance_point(point):
     distance = math.sqrt(point[0] ** 2 + point[1] ** 2 + point[2] ** 2)
     return distance
+
+
 def average_vectors(vectors):
     if not vectors:
         return None  # return None if the list is empty
@@ -81,10 +69,15 @@ def average_vectors(vectors):
     num_vectors = len(vectors)
 
     return [total_x / num_vectors, total_y / num_vectors, total_z / num_vectors]
+
+
 def average_list(list):
-    return sum(list)/len(list)
+    return sum(list) / len(list)
+
+
 def vector_between_points(p1, p2):
     return [p2[i] - p1[i] for i in range(3)]
+
 
 """INTIATING BNO055 ROTATIONAL DATA"""
 import os
@@ -150,62 +143,20 @@ try:
                 current_matched_coords = [kps[match.trainIdx].pt for match in good_matches_percentage]
 
                 # Print matched coordinates (You can store or process them further based on your needs)
-                #print("Previous Frame Matched Coordinates:", prev_matched_coords)
-                #print("Current Frame Matched Coordinates:", current_matched_coords)
-                #print("Depth of current:", depth_image[int(current_matched_coords[0][1])][int(current_matched_coords[0][0])])
+                print("Previous Frame Matched Coordinates:", prev_matched_coords)
+                print("Current Frame Matched Coordinates:", current_matched_coords)
+                print("Depth of current:",
+                      depth_image[int(current_matched_coords[0][1])][int(current_matched_coords[0][0])])
 
                 if len(good_matches) > 0:
-                    matched_image = cv2.drawMatches(prev_gray, prev_kps, gray, kps, good_matches_percentage, None)  # or replace 'good_matches_percentage' with 'good_matches_ratio'
+                    matched_image = cv2.drawMatches(prev_gray, prev_kps, gray, kps, good_matches_percentage,
+                                                    None)  # or replace 'good_matches_percentage' with 'good_matches_ratio'
                     cv2.imshow('Filtered Matched keypoints', matched_image)
-
-                """ORIENTATION CORRECTION"""
-                #Get the delta eulers
-                current_euler = sensor.euler
-                current_vector = [0,0,0]
-                if previous_euler is not None:
-                    delta_euler = [current_euler[0] - previous_euler[0],current_euler[1] - previous_euler[1],current_euler[2]-current_euler[2]]
-
-                    #Create list of current points that are adjusted for rotation
-                    current_vector_list = []
-                    for index in range(0,len(prev_matched_coords)):
-                        previous_point = rs.rs2_deproject_pixel_to_point(depth_intrinsics,
-                                                                         [int(prev_matched_coords[index][1]),int(prev_matched_coords[index][0])],
-                                                                         depth_image[int(prev_matched_coords[index][1])][int(prev_matched_coords[index][0])])
-                        current_point = rs.rs2_deproject_pixel_to_point(depth_intrinsics,
-                                                                        [int(current_matched_coords[index][1]),int(current_matched_coords[index][0])],
-                                                                        depth_image[int(current_matched_coords[index][1])][int(current_matched_coords[index][0])])
-                        new_coord = rotated_point_coordinates(np.array(previous_point),
-                                                              np.radians(delta_euler[0]),
-                                                              np.radians(delta_euler[1]),
-                                                              np.radians(delta_euler[2]))
-                        current_vector_list.append([current_point[0] - new_coord[0],
-                                                current_point[1] - new_coord[1],
-                                                current_point[2] - new_coord[2]])
-                        #print("CURRENT POINT:", current_point)
-                        #print("PREVIOUS POINT:", previous_point)
-                        #print("EULER:", current_euler)
-                        #print("NEW COORD:", new_coord.tolist())
-
-                    #FILTER OUTLIERS
-                    current_vector_list = filter_outlier_vectors(current_vector_list)
-                    #print("CURRENT VECTORS", current_vector_list)
-
-                    #Average out the list of vectors to find an objective movement vector
-                    if(len(current_vector_list) > 0):
-                        for i in range(0,len(current_vector_list)):
-                            current_vector[0] += current_vector_list[i][0]
-                            current_vector[1] += current_vector_list[i][1]
-                            current_vector[2] += current_vector_list[i][2]
-                        current_vector[0] = current_vector[0] / len(current_vector_list)
-                        current_vector[1] = current_vector[1] / len(current_vector_list)
-                        current_vector[2] = current_vector[2] / len(current_vector_list)
-                        print("THIS IS THE CURRENT TRAJECTORY:",current_vector)
 
         # Update the previous frame data
         prev_gray = gray
         prev_kps = kps
         prev_descs = descs
-        previous_euler = current_euler
 
         # Exit on 'q'
         if cv2.waitKey(1) & 0xFF == ord('q'):
